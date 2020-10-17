@@ -28,13 +28,13 @@ module.exports.transactionController = async (req, res) => {
                 fillResponse(res, 200, 'Success', historyUser[historyUser.length -1]);
             }
         } else {
-            fillResponse(res, 400, 'Error', isValidRequest.details[0].message, []);
+            fillResponse(res, 400, 'Invalid input', isValidRequest.details[0].message, []);
         }
 
     } catch (err) {
         console.error(err);
         transaction.error = err;
-        fillResponse(res, 500, 'Error', err);
+        fillResponse(res, 400, 'Invalid status value', err);
     }
 };
 
@@ -43,23 +43,39 @@ module.exports.historyController = async (req, res) => {
         fillResponse(res, 200, 'Success', historyUser);
     } catch (err) {
         console.error(err);
-        fillResponse(res, 500, 'Error', err);
+        fillResponse(res, 400, 'Error', err);
     }
 };
 
 
 module.exports.idController = async (req, res) => {
     try {
+        let founded = false;
         const transactionId = req.params.id;
-             historyUser.every(function (transaction) {
-                if(transaction.id === transactionId){
+        // validate the request
+        const tId = {id: transactionId};
+        const requestValidSchema = Joi.object({
+            id: Joi.string().guid().required()
+        });
+        const isValidRequest = Joi.validate(tId, requestValidSchema);
+        if (!isValidRequest) {
+            //search the transaction
+            historyUser.every(function (transaction) {
+                if (transaction.id === transactionId) {
                     fillResponse(res, 200, 'Success', transaction);
+                    founded = true;
                     return false;
-                } else { return true;}
-             });
+                } else {
+                    return true;
+                }
+            });
+            !founded ? fillResponse(res, 400, 'Error', 'Transaction not found') : null;
+        }else {
+            fillResponse(res, 400, 'Invalid ID supplied', isValidRequest.details[0].message, []);
+        }
     } catch (err) {
         console.error(err);
-        fillResponse(res, 500, 'Error', err);
+        fillResponse(res, 400, 'Error', err);
     }
 };
 
